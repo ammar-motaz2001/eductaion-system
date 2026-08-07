@@ -116,6 +116,14 @@ const definition = {
   },
   servers: [
     { url: `http://localhost:${env.PORT}${env.API_PREFIX}`, description: 'Local development' },
+    ...(process.env.VERCEL_URL
+      ? [
+          {
+            url: `https://${process.env.VERCEL_URL}${env.API_PREFIX}`,
+            description: 'Vercel deployment',
+          },
+        ]
+      : []),
     { url: `${env.CLIENT_URL}${env.API_PREFIX}`, description: 'Configured deployment' },
   ],
   components: {
@@ -380,10 +388,20 @@ const spec = swaggerJsdoc({
  * @param {import('express').Application} app
  */
 function mountSwagger(app) {
+  const swaggerCdn = 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14';
+
   const uiOptions = {
     explorer: true,
     customSiteTitle: `${env.APP_NAME} API Reference`,
+    customCssUrl: `${swaggerCdn}/swagger-ui.css`,
+    customJs: [
+      `${swaggerCdn}/swagger-ui-bundle.js`,
+      `${swaggerCdn}/swagger-ui-standalone-preset.js`,
+    ],
     swaggerOptions: {
+      // Load the spec over HTTP — required on Vercel where bundled static assets
+      // under /docs are not served reliably by swagger-ui-express.
+      url: '/docs.json',
       persistAuthorization: true,
       docExpansion: 'none',
       filter: true,
@@ -393,6 +411,12 @@ function mountSwagger(app) {
   };
 
   app.get('/docs.json', (_req, res) => res.json(spec));
+
+  if (env.isVercel) {
+    app.use('/docs', swaggerUi.setup(spec, uiOptions));
+    return;
+  }
+
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(spec, uiOptions));
 }
 

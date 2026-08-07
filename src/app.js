@@ -36,8 +36,8 @@ app.disable('x-powered-by');
 // ── Security ────────────────────────────────────────────────────────────────
 app.use(
   helmet({
-    // Swagger UI needs inline styles/scripts; the API itself serves no HTML.
-    contentSecurityPolicy: env.isProduction ? undefined : false,
+    // Swagger UI needs inline styles/scripts and CDN assets; the API serves no other HTML.
+    contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
