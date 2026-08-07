@@ -17,7 +17,7 @@ const { buildSafeFilename } = require('../../utils/file.util');
 class LocalStorageDriver extends StorageDriver {
   constructor() {
     super();
-    this.rootDir = path.resolve(process.cwd(), env.LOCAL_UPLOAD_DIR);
+    this.rootDir = env.localUploadRoot;
   }
 
   get name() {

@@ -86,7 +86,7 @@ app.use(
 // ── Static uploads (local storage driver only) ──────────────────────────────
 app.use(
   `/${env.LOCAL_UPLOAD_DIR}`,
-  express.static(path.resolve(process.cwd(), env.LOCAL_UPLOAD_DIR), {
+  express.static(env.localUploadRoot, {
     maxAge: env.isProduction ? '7d' : 0,
     fallthrough: true,
     index: false,

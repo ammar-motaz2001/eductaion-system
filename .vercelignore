@@ -1,0 +1,6 @@
+logs/
+uploads/
+coverage/
+.env
+.env.*
+!.env.example

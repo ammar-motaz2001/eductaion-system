@@ -98,6 +98,10 @@ const env = Object.freeze({
   isProduction: raw.NODE_ENV === 'production',
   isDevelopment: raw.NODE_ENV === 'development',
   isTest: raw.NODE_ENV === 'test',
+  isVercel: Boolean(process.env.VERCEL),
+  localUploadRoot: process.env.VERCEL
+    ? path.join('/tmp', raw.LOCAL_UPLOAD_DIR)
+    : path.resolve(process.cwd(), raw.LOCAL_UPLOAD_DIR),
   /** Parsed CORS allow-list. `['*']` means "any origin". */
   corsOrigins: raw.CORS_ORIGINS.split(',')
     .map((origin) => origin.trim())

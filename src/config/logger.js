@@ -14,8 +14,10 @@ require('winston-daily-rotate-file');
 
 const env = require('./env');
 
-const logDir = path.resolve(process.cwd(), env.LOG_DIR);
-if (!fs.existsSync(logDir)) {
+const logToFile = !env.isTest && !env.isVercel;
+const logDir = logToFile ? path.resolve(process.cwd(), env.LOG_DIR) : null;
+
+if (logDir && !fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
 
@@ -41,7 +43,7 @@ const transports = [
   }),
 ];
 
-if (!env.isTest) {
+if (logToFile) {
   transports.push(
     new winston.transports.DailyRotateFile({
       dirname: logDir,
