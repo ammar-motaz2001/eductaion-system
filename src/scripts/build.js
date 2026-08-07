@@ -68,10 +68,22 @@ console.log(`\n${colour.bold}Building — Education Management System backend${c
 // ── 1. Configuration ────────────────────────────────────────────────────────
 console.log(`${colour.bold}Configuration${colour.reset}`);
 
-check('.env file present', () => {
-  if (!fs.existsSync(path.join(ROOT, '.env'))) {
+check('environment source present', () => {
+  const hasEnvFile = fs.existsSync(path.join(ROOT, '.env'));
+  const hasPlatformEnv = Boolean(
+    process.env.MONGODB_URI &&
+      process.env.JWT_ACCESS_SECRET &&
+      process.env.JWT_REFRESH_SECRET
+  );
+
+  if (process.env.VERCEL || hasPlatformEnv) {
+    return process.env.VERCEL ? 'Vercel dashboard' : 'process environment';
+  }
+
+  if (!hasEnvFile) {
     throw new Error('No .env file found — copy .env.example to .env');
   }
+
   return '.env';
 });
 
