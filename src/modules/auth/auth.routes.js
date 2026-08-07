@@ -8,6 +8,7 @@ const validate = require('../../middlewares/validate.middleware');
 const { authenticate } = require('../../middlewares/auth.middleware');
 const { authLimiter } = require('../../middlewares/rateLimit.middleware');
 const { imageUploader, handleUploadErrors } = require('../../middlewares/upload.middleware');
+const stripRegisterBody = require('./registerBody.middleware');
 
 const router = Router();
 
@@ -142,6 +143,7 @@ router.post(
   authLimiter,
   imageUploader.single('image'),
   handleUploadErrors,
+  stripRegisterBody,
   validate(schemas.register),
   controller.register
 );

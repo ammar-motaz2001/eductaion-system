@@ -55,9 +55,16 @@ const personName = z
       'Name may only contain letters, numbers, spaces, apostrophes, hyphens, underscores and dots',
   });
 
-/** Treat empty multipart text fields as absent so optional Zod keys pass. */
+/** Treat empty / missing multipart values as absent so optional Zod keys pass. */
 const emptyToUndefined = (schema) =>
   z.preprocess((value) => (value === '' || value === null ? undefined : value), schema);
+
+/** Optional form/JSON field — missing, empty, or null all become undefined. */
+const optionalField = (schema) =>
+  z.preprocess(
+    (value) => (value === '' || value === null || value === undefined ? undefined : value),
+    schema.optional()
+  );
 
 /** ISO-8601 date string or timestamp, coerced to a `Date`. */
 const isoDate = z.coerce.date({
@@ -130,4 +137,5 @@ module.exports = {
   filterValue,
   nonEmptyObject,
   emptyToUndefined,
+  optionalField,
 };

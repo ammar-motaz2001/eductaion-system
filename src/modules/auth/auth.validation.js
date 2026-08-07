@@ -8,7 +8,7 @@ const {
   phone,
   objectId,
   shortText,
-  emptyToUndefined,
+  optionalField,
 } = require('../../utils/validators');
 const { EDUCATION_LEVELS } = require('../../core/constants');
 
@@ -19,7 +19,7 @@ const addressSchemaBase = z.object({
   country: shortText(80).optional(),
 });
 
-const addressSchema = emptyToUndefined(
+const addressSchema = optionalField(
   z.preprocess((value) => {
     if (typeof value === 'string') {
       try {
@@ -45,7 +45,7 @@ const addressSchema = emptyToUndefined(
 const register = {
   body: z
     .object({
-      activationCode: emptyToUndefined(
+      activationCode: optionalField(
         z
           .string()
           .trim()
@@ -58,9 +58,9 @@ const register = {
       password,
       phone,
       parentPhone: phone,
-      age: emptyToUndefined(z.coerce.number().int().min(3).max(100)),
-      educationLevel: emptyToUndefined(z.enum(EDUCATION_LEVELS)),
-      school: emptyToUndefined(shortText(150)),
+      age: optionalField(z.coerce.number().int().min(3).max(100)),
+      educationLevel: optionalField(z.enum(EDUCATION_LEVELS)),
+      school: optionalField(shortText(150)),
       address: addressSchema,
     })
     .refine((value) => Boolean(value.activationCode) || Boolean(value.educationLevel), {
