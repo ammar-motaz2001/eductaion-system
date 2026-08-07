@@ -7,6 +7,7 @@ const schemas = require('./auth.validation');
 const validate = require('../../middlewares/validate.middleware');
 const { authenticate } = require('../../middlewares/auth.middleware');
 const { authLimiter } = require('../../middlewares/rateLimit.middleware');
+const { imageUploader, handleUploadErrors } = require('../../middlewares/upload.middleware');
 
 const router = Router();
 
@@ -39,6 +40,36 @@ const router = Router();
  *     requestBody:
  *       required: true
  *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [fullName, email, password, phone, parentPhone]
+ *             properties:
+ *               activationCode:
+ *                 type: string
+ *                 example: "A7K2-9QX4-M3"
+ *                 description: Optional — omit to have one generated automatically
+ *               fullName: { type: string, example: "minaadel22" }
+ *               email: { type: string, format: email, example: "yara@example.com" }
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: Minimum 8 characters with upper case, lower case and a digit
+ *                 example: "Student@123"
+ *               phone: { type: string, example: "+201234567890" }
+ *               parentPhone: { type: string, example: "+201234567891" }
+ *               age: { type: integer, minimum: 3, maximum: 100, example: 16 }
+ *               educationLevel:
+ *                 allOf: [{ $ref: '#/components/schemas/EducationLevel' }]
+ *                 description: Required unless `activationCode` is supplied and bound to a level
+ *               school: { type: string, example: "Cairo Language School" }
+ *               address:
+ *                 type: string
+ *                 description: JSON string matching the Address schema
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: Optional profile photo (JPEG, PNG, WebP, GIF, BMP or SVG, max 5 MB)
  *         application/json:
  *           schema:
  *             type: object
@@ -48,7 +79,7 @@ const router = Router();
  *                 type: string
  *                 example: "A7K2-9QX4-M3"
  *                 description: Optional — omit to have one generated automatically
- *               fullName: { type: string, example: "Yara Hassan" }
+ *               fullName: { type: string, example: "minaadel22" }
  *               email: { type: string, format: email, example: "yara@example.com" }
  *               password:
  *                 type: string
@@ -68,7 +99,7 @@ const router = Router();
  *             withoutCode:
  *               summary: No activation code — one is generated automatically
  *               value:
- *                 fullName: "Yara Hassan"
+ *                 fullName: "minaadel22"
  *                 email: "yara@example.com"
  *                 password: "Student@123"
  *                 phone: "+201234567890"
@@ -80,7 +111,7 @@ const router = Router();
  *               summary: Redeeming an instructor-issued code
  *               value:
  *                 activationCode: "A7K2-9QX4-M3"
- *                 fullName: "Yara Hassan"
+ *                 fullName: "minaadel22"
  *                 email: "yara@example.com"
  *                 password: "Student@123"
  *                 phone: "+201234567890"
@@ -106,7 +137,14 @@ const router = Router();
  *       422: { $ref: '#/components/responses/ValidationError' }
  *       429: { $ref: '#/components/responses/TooManyRequests' }
  */
-router.post('/register', authLimiter, validate(schemas.register), controller.register);
+router.post(
+  '/register',
+  authLimiter,
+  imageUploader.single('image'),
+  handleUploadErrors,
+  validate(schemas.register),
+  controller.register
+);
 
 /**
  * @swagger

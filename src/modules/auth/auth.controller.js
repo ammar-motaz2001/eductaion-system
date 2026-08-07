@@ -18,7 +18,7 @@ const sessionContext = (req) => ({
 });
 
 const register = asyncHandler(async (req, res) => {
-  const result = await authService.registerStudent(req.body);
+  const result = await authService.registerStudent(req.body, req.file);
   return ApiResponse.created(res, result, result.message);
 });
 

@@ -19,6 +19,7 @@ const {
 } = require('../../utils/token.util');
 const { addMinutes } = require('../../utils/date.util');
 const mailService = require('../../services/mail.service');
+const storageService = require('../../services/storage');
 
 const userRepository = require('../users/user.repository');
 const studentRepository = require('../students/student.repository');
@@ -169,8 +170,9 @@ class AuthService {
    * unlike login this flow records no session context.
    *
    * @param {object} payload
+   * @param {Express.Multer.File} [file] Optional profile image uploaded during registration.
    */
-  async registerStudent(payload) {
+  async registerStudent(payload, file = null) {
     const { activationCode, email, password, fullName, ...profile } = payload;
 
     const existing = await this.users.findByEmail(email, { includeDeleted: true });
@@ -181,6 +183,7 @@ class AuthService {
       : await this.#generateAutoActivationCode();
 
     let createdUser = null;
+    let uploadedImage = null;
     try {
       // `create` via the model so the password-hashing hook runs.
       createdUser = await this.users.model.create({
@@ -224,13 +227,30 @@ class AuthService {
 
       await this.notifications.pendingStudentApproval({ student });
 
+      if (file) {
+        uploadedImage = await storageService.upload(file, {
+          folder: `students/${student._id}`,
+          kind: file.resolvedKind,
+        });
+        await this.students.updateById(student._id, { $set: { profileImage: uploadedImage } });
+        await this.users.updateById(createdUser._id, { $set: { profileImage: uploadedImage } });
+        createdUser.profileImage = uploadedImage;
+      }
+
       return {
         user: AuthService.toPublicUser(createdUser),
-        student: { id: String(student._id), status: student.status },
+        student: {
+          id: String(student._id),
+          status: student.status,
+          profileImage: uploadedImage,
+        },
         message:
           'Registration successful. Your account is pending instructor approval and cannot sign in yet.',
       };
     } catch (error) {
+      if (uploadedImage?.key) {
+        await storageService.remove(uploadedImage).catch(() => {});
+      }
       // Compensating actions — no transaction is available on standalone MongoDB.
       if (activationCode) {
         await this.activationCodes.release(codeRecord._id).catch(() => {});

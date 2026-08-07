@@ -142,13 +142,46 @@ router.get('/pending', instructorOnly, validate(schemas.list), controller.listPe
  *       200: { $ref: '#/components/responses/PaginatedList' }
  *       403: { $ref: '#/components/responses/Forbidden' }
  *       404: { $ref: '#/components/responses/NotFound' }
+ *   put:
+ *     summary: Set the collections a student belongs to
+ *     description: >
+ *       Instructor-only. Replaces the student's full collection membership —
+ *       collections omitted from the list are removed, new ones are added.
+ *       Works for both pending and active students.
+ *     tags: [Students]
+ *     parameters:
+ *       - $ref: '#/components/parameters/StudentIdParam'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [collections]
+ *             properties:
+ *               collections:
+ *                 type: array
+ *                 items: { type: string }
+ *                 example: ["665f1c2e9b1e8a0012ab34cd", "665f1c2e9b1e8a0012ab34ce"]
+ *     responses:
+ *       200: { description: Collections updated }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       403: { $ref: '#/components/responses/Forbidden' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/ValidationError' }
  */
-router.get(
-  '/:studentId/collections',
-  instructorOnly,
-  validate({ params: z.object({ studentId: objectId }), query: paginationQuery }),
-  enrolmentController.listCollectionsForStudent
-);
+router
+  .route('/:studentId/collections')
+  .get(
+    instructorOnly,
+    validate({ params: z.object({ studentId: objectId }), query: paginationQuery }),
+    enrolmentController.listCollectionsForStudent
+  )
+  .put(
+    instructorOnly,
+    validate(schemas.setCollections),
+    enrolmentController.setStudentCollections
+  );
 
 /**
  * @swagger

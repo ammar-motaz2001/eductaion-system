@@ -44,15 +44,20 @@ const password = z
   .refine((value) => /[A-Z]/.test(value), { message: 'Password must contain an uppercase letter' })
   .refine((value) => /\d/.test(value), { message: 'Password must contain a digit' });
 
-/** Human name: letters (incl. Arabic), spaces, apostrophes, hyphens and dots. */
+/** Human name or display handle: letters, numbers, spaces, apostrophes, hyphens, underscores and dots. */
 const personName = z
   .string()
   .trim()
   .min(2, 'Name must be at least 2 characters')
   .max(120, 'Name must be at most 120 characters')
-  .refine((value) => /^[\p{L}\p{M}\s'.-]+$/u.test(value), {
-    message: 'Name may only contain letters, spaces, apostrophes, hyphens and dots',
+  .refine((value) => /^[\p{L}\p{M}\d\s'.-_]+$/u.test(value), {
+    message:
+      'Name may only contain letters, numbers, spaces, apostrophes, hyphens, underscores and dots',
   });
+
+/** Treat empty multipart text fields as absent so optional Zod keys pass. */
+const emptyToUndefined = (schema) =>
+  z.preprocess((value) => (value === '' || value === null ? undefined : value), schema);
 
 /** ISO-8601 date string or timestamp, coerced to a `Date`. */
 const isoDate = z.coerce.date({
@@ -124,4 +129,5 @@ module.exports = {
   idParams,
   filterValue,
   nonEmptyObject,
+  emptyToUndefined,
 };

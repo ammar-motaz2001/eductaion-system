@@ -103,6 +103,13 @@ const setAccountActive = {
   body: z.object({ isActive: z.coerce.boolean() }),
 };
 
+const setCollections = {
+  params: z.object({ studentId: objectId }),
+  body: z.object({
+    collections: z.array(objectId).max(30),
+  }),
+};
+
 module.exports = {
   create,
   update,
@@ -111,5 +118,6 @@ module.exports = {
   removeNote,
   setPerformance,
   setAccountActive,
+  setCollections,
   idParams,
 };

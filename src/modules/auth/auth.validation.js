@@ -8,17 +8,29 @@ const {
   phone,
   objectId,
   shortText,
+  emptyToUndefined,
 } = require('../../utils/validators');
 const { EDUCATION_LEVELS } = require('../../core/constants');
 
-const addressSchema = z
-  .object({
-    line: shortText(200).optional(),
-    city: shortText(80).optional(),
-    governorate: shortText(80).optional(),
-    country: shortText(80).optional(),
-  })
-  .optional();
+const addressSchemaBase = z.object({
+  line: shortText(200).optional(),
+  city: shortText(80).optional(),
+  governorate: shortText(80).optional(),
+  country: shortText(80).optional(),
+});
+
+const addressSchema = emptyToUndefined(
+  z.preprocess((value) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }, addressSchemaBase)
+);
 
 /**
  * POST /auth/register — student self-registration.
@@ -33,21 +45,22 @@ const addressSchema = z
 const register = {
   body: z
     .object({
-      activationCode: z
-        .string()
-        .trim()
-        .toUpperCase()
-        .min(6, 'Activation code is too short')
-        .max(32, 'Activation code is too long')
-        .optional(),
+      activationCode: emptyToUndefined(
+        z
+          .string()
+          .trim()
+          .toUpperCase()
+          .min(6, 'Activation code is too short')
+          .max(32, 'Activation code is too long')
+      ),
       fullName: personName,
       email,
       password,
       phone,
       parentPhone: phone,
-      age: z.coerce.number().int().min(3).max(100).optional(),
-      educationLevel: z.enum(EDUCATION_LEVELS).optional(),
-      school: shortText(150).optional(),
+      age: emptyToUndefined(z.coerce.number().int().min(3).max(100)),
+      educationLevel: emptyToUndefined(z.enum(EDUCATION_LEVELS)),
+      school: emptyToUndefined(shortText(150)),
       address: addressSchema,
     })
     .refine((value) => Boolean(value.activationCode) || Boolean(value.educationLevel), {

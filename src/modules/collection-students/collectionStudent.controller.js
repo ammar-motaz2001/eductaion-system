@@ -63,6 +63,15 @@ const listCollectionsForStudent = asyncHandler(async (req, res) => {
   return ApiResponse.paginated(res, page, 'Student collections retrieved successfully');
 });
 
+const setStudentCollections = asyncHandler(async (req, res) => {
+  const student = await service.setStudentCollections(
+    req.params.studentId,
+    req.body.collections,
+    req.user._id
+  );
+  return ApiResponse.ok(res, student, 'Student collections updated successfully');
+});
+
 module.exports = {
   addStudent,
   listStudents,
@@ -70,4 +79,5 @@ module.exports = {
   removeStudent,
   setActive,
   listCollectionsForStudent,
+  setStudentCollections,
 };

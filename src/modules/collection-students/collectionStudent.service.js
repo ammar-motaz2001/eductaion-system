@@ -52,12 +52,12 @@ class CollectionStudentService extends BaseService {
    * @param {string} studentId
    * @param {string} actorId
    */
-  async addStudent(collectionId, studentId, actorId, notes) {
+  async addStudent(collectionId, studentId, actorId, notes, { allowPending = false } = {}) {
     const collection = await this.#requireCollection(collectionId);
 
     const student = await this.students.findById(studentId);
     if (!student) throw ApiError.notFound('Student not found');
-    if (student.status !== STUDENT_STATUS.ACTIVE) {
+    if (!allowPending && student.status !== STUDENT_STATUS.ACTIVE) {
       throw ApiError.badRequest('Only approved (active) students can be enrolled');
     }
 
@@ -191,6 +191,44 @@ class CollectionStudentService extends BaseService {
     });
 
     return this.collections.paginate(options);
+  }
+
+  /**
+   * Replace the full set of collections a student belongs to.
+   * Instructors use this to add/remove enrolments in one request.
+   */
+  async setStudentCollections(studentId, collectionIds, actorId) {
+    const student = await this.students.findById(studentId);
+    if (!student) throw ApiError.notFound('Student not found');
+
+    const desired = [...new Set(collectionIds.map(String))];
+
+    if (desired.length) {
+      const found = await this.collections.count({ _id: { $in: desired } });
+      if (found !== desired.length) {
+        throw ApiError.badRequest('One or more of the specified collections do not exist');
+      }
+    }
+
+    const current = new Set((student.collections || []).map(String));
+    const desiredSet = new Set(desired);
+
+    const toRemove = [...current].filter((collectionId) => !desiredSet.has(collectionId));
+    const toAdd = desired.filter((collectionId) => !current.has(collectionId));
+
+    for (const collectionId of toRemove) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.removeStudent(collectionId, studentId, actorId);
+    }
+
+    for (const collectionId of toAdd) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.addStudent(collectionId, studentId, actorId, undefined, { allowPending: true });
+    }
+
+    return this.students.findById(studentId, {
+      populate: { path: 'collections', select: 'name subject educationLevel schedule' },
+    });
   }
 }
 
