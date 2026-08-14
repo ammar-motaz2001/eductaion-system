@@ -119,6 +119,7 @@ const FILE_KINDS = Object.freeze({
   PRESENTATION: 'presentation',
   SPREADSHEET: 'spreadsheet',
   VIDEO: 'video',
+  ARCHIVE: 'archive',
   OTHER: 'other',
 });
 

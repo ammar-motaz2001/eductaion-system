@@ -47,7 +47,39 @@ const MIME_GROUPS = Object.freeze({
     mimes: ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'],
     extensions: ['.mp4', '.mov', '.avi', '.mkv', '.webm'],
   },
+  [FILE_KINDS.ARCHIVE]: {
+    // Archive MIME types are the least consistent of all: the same .zip is sent
+    // as `application/zip`, `application/x-zip-compressed` or `multipart/x-zip`
+    // depending on the client and OS, so the extension carries most of the
+    // weight here (see `GENERIC_MIMES` below).
+    mimes: [
+      'application/zip',
+      'application/x-zip-compressed',
+      'multipart/x-zip',
+      'application/vnd.rar',
+      'application/x-rar-compressed',
+      'application/x-7z-compressed',
+      'application/x-tar',
+      'application/gzip',
+      'application/x-gzip',
+      'application/x-bzip2',
+      'application/x-compressed',
+      'application/x-compressed-tar',
+    ],
+    extensions: ['.zip', '.rar', '.7z', '.tar', '.gz', '.tgz', '.bz2'],
+  },
 });
+
+/**
+ * MIME types clients send when they cannot identify the file. For these the
+ * extension is trusted instead — common for Office documents and archives.
+ */
+const GENERIC_MIMES = Object.freeze([
+  '',
+  'application/octet-stream',
+  'application/binary',
+  'binary/octet-stream',
+]);
 
 /** Kinds accepted for lesson material and generic attachments. */
 const LESSON_FILE_KINDS = [
@@ -57,17 +89,20 @@ const LESSON_FILE_KINDS = [
   FILE_KINDS.PRESENTATION,
   FILE_KINDS.SPREADSHEET,
   FILE_KINDS.VIDEO,
+  FILE_KINDS.ARCHIVE,
 ];
 
 /** Resolve which logical kind a file belongs to, or `null` when disallowed. */
 function resolveFileKind(mimetype, originalName) {
   const extension = path.extname(originalName || '').toLowerCase();
+  const normalizedMime = (mimetype || '').toLowerCase().split(';')[0].trim();
+  const mimeIsGeneric = GENERIC_MIMES.includes(normalizedMime);
   for (const [kind, group] of Object.entries(MIME_GROUPS)) {
-    const mimeMatches = group.mimes.includes(mimetype);
-    const extensionMatches = extension && group.extensions.includes(extension);
+    const mimeMatches = group.mimes.includes(normalizedMime);
+    const extensionMatches = Boolean(extension) && group.extensions.includes(extension);
     // Require the MIME type to match; the extension acts as a secondary signal
-    // for Office documents that some clients send as octet-stream.
-    if (mimeMatches || (mimetype === 'application/octet-stream' && extensionMatches)) {
+    // for Office documents and archives that clients send as octet-stream.
+    if (mimeMatches || (mimeIsGeneric && extensionMatches)) {
       return kind;
     }
   }

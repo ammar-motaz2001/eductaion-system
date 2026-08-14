@@ -31,7 +31,9 @@ router.use(authenticate, requireActiveStudent);
  *     summary: Upload an attachment to a collection
  *     description: >
  *       `name` defaults to the uploaded file's original filename. Set
- *       `isVisibleToStudents=false` to keep the file instructor-only.
+ *       `isVisibleToStudents=false` to keep the file instructor-only. Accepts the
+ *       same types as lessons, including compressed archives (`.zip`, `.rar`,
+ *       `.7z`, `.tar`, `.gz`, `.tgz`, `.bz2`), up to `UPLOAD_MAX_FILE_SIZE_MB`.
  *     tags: [Attachments]
  *     requestBody:
  *       required: true

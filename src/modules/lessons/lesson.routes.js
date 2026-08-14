@@ -19,7 +19,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Lessons
- *   description: Lesson material (PDF, images, Word, PowerPoint, video) per collection
+ *   description: Lesson material (PDF, images, Word, PowerPoint, video, archives) per collection
  */
 
 router.use(authenticate, requireActiveStudent);
@@ -30,8 +30,9 @@ router.use(authenticate, requireActiveStudent);
  *   post:
  *     summary: Upload a lesson file
  *     description: >
- *       Accepts PDF, images, Word documents, PowerPoint, spreadsheets and video,
- *       up to `UPLOAD_MAX_FILE_SIZE_MB`. Lesson names must be unique inside a
+ *       Accepts PDF, images, Word documents, PowerPoint, spreadsheets, video and
+ *       compressed archives (`.zip`, `.rar`, `.7z`, `.tar`, `.gz`, `.tgz`,
+ *       `.bz2`), up to `UPLOAD_MAX_FILE_SIZE_MB`. Lesson names must be unique inside a
  *       collection. If the database write fails the uploaded blob is removed, so
  *       no orphaned files accumulate.
  *     tags: [Lessons]

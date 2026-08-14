@@ -50,7 +50,8 @@ Download: each module also exposes its own /{id}/download endpoint that
 ```
 
 **Accepted file types across all three:** PDF, images (JPEG/PNG/WebP/GIF/BMP/SVG),
-Word, PowerPoint, Excel/CSV, video. Rejected types return `415`.
+Word, PowerPoint, Excel/CSV, video, compressed archives (`.zip`, `.rar`, `.7z`,
+`.tar`, `.gz`, `.tgz`, `.bz2`). Rejected types return `415`.
 
 **Role split (same across all three):**
 | Action | instructor | student |
@@ -684,7 +685,7 @@ export const changeSettingsPassword = (payload) =>
 | 404 | bad `{id}` | everywhere | remove row / redirect |
 | 409 | duplicate `lessonName` within a collection (Lessons); email already in use (Settings profile) | `POST /lessons`, `PATCH /settings/profile` | inline message near the field |
 | 413 | file too large | any upload endpoint | "File exceeds the size limit" |
-| 415 | unsupported file type | any upload endpoint | "Unsupported file type — allowed: PDF, images, Word, PowerPoint, Excel, video" |
+| 415 | unsupported file type | any upload endpoint | "Unsupported file type — allowed: PDF, images, Word, PowerPoint, Excel, video, archives" |
 | 422 | validation | everywhere | map `error.details[].field` to form fields |
 
 ---

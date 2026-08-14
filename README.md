@@ -419,8 +419,10 @@ Expense (standalone ledger)
 
 ## File storage
 
-Uploads accept PDF, images, Word, PowerPoint, spreadsheets and video, validated by MIME
-type **and** extension, capped at `UPLOAD_MAX_FILE_SIZE_MB`.
+Uploads accept PDF, images, Word, PowerPoint, spreadsheets, video and compressed
+archives (`.zip`, `.rar`, `.7z`, `.tar`, `.gz`, `.tgz`, `.bz2`), validated by MIME
+type **and** extension, capped at `UPLOAD_MAX_FILE_SIZE_MB`. Image-only endpoints
+(profile photos, settings logo) use the separate `UPLOAD_MAX_IMAGE_SIZE_MB` cap.
 
 Two drivers behind one interface:
 
@@ -472,6 +474,7 @@ All variables are documented in [`.env.example`](.env.example). The ones that ma
 | `ACTIVATION_CODE_EXPIRES_IN_DAYS` | `14` | Activation code validity |
 | `STORAGE_DRIVER` | `local` | `local` or `cloudinary` |
 | `UPLOAD_MAX_FILE_SIZE_MB` | `100` | Per-file upload cap |
+| `UPLOAD_MAX_IMAGE_SIZE_MB` | `5` | Cap for image-only endpoints (photos, logo) |
 | `CORS_ORIGINS` | `*` | Comma-separated allow-list |
 | `RATE_LIMIT_MAX_REQUESTS` | `300` | Per window, per IP |
 | `SMTP_HOST` | *(empty)* | Leave empty to log emails instead of sending |

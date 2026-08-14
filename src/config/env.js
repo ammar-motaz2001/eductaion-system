@@ -51,6 +51,8 @@ const schema = z.object({
 
   STORAGE_DRIVER: z.enum(['cloudinary', 'local']).default('local'),
   UPLOAD_MAX_FILE_SIZE_MB: z.coerce.number().positive().default(100),
+  /** Cap for image-only endpoints (profile photos, settings logo). */
+  UPLOAD_MAX_IMAGE_SIZE_MB: z.coerce.number().positive().default(5),
   LOCAL_UPLOAD_DIR: z.string().default('uploads'),
 
   CLOUDINARY_CLOUD_NAME: z.string().optional().default(''),
@@ -107,6 +109,10 @@ const env = Object.freeze({
     .map((origin) => origin.trim())
     .filter(Boolean),
   uploadMaxFileSizeBytes: raw.UPLOAD_MAX_FILE_SIZE_MB * 1024 * 1024,
+  /** Cap applied by image-only endpoints (profile photos, settings logo). */
+  uploadMaxImageSizeBytes: raw.UPLOAD_MAX_IMAGE_SIZE_MB * 1024 * 1024,
+  /* Note: the upload middleware reads the MB values directly so its 413 message
+     can name the limit that was actually exceeded. */
   rateLimitWindowMs: raw.RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
   mailEnabled: Boolean(raw.SMTP_HOST),
   cloudinaryConfigured: Boolean(

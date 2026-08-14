@@ -35,28 +35,57 @@ function buildFileFilter(allowedKinds) {
   };
 }
 
+/** Multer entry points that return a request handler. */
+const MULTER_METHODS = ['single', 'array', 'fields', 'none', 'any'];
+
+/**
+ * Wrap a multer instance so every handler it produces first records the cap it
+ * enforces on the request. Without this, `handleUploadErrors` cannot tell which
+ * uploader rejected the file and would always report the global limit.
+ *
+ * @param {multer.Multer} instance
+ * @param {number} maxSizeMb
+ */
+function tagLimit(instance, maxSizeMb) {
+  const record = (req, _res, next) => {
+    req.uploadMaxSizeMb = maxSizeMb;
+    next();
+  };
+
+  return MULTER_METHODS.reduce((wrapped, method) => {
+    wrapped[method] = (...args) => [record, instance[method](...args)];
+    return wrapped;
+  }, {});
+}
+
 /**
  * @param {object} [options]
  * @param {string[]} [options.kinds] Allowed logical kinds.
- * @param {number} [options.maxSizeMb] Per-file size cap.
+ * @param {number} [options.maxSizeMb] Per-file size cap, in MB.
  * @param {number} [options.maxFiles=10]
  */
 function createUploader({ kinds = LESSON_FILE_KINDS, maxSizeMb, maxFiles = 10 } = {}) {
-  return multer({
+  const limitMb = maxSizeMb || env.UPLOAD_MAX_FILE_SIZE_MB;
+  const instance = multer({
     storage: multer.memoryStorage(),
     limits: {
-      fileSize: maxSizeMb ? maxSizeMb * 1024 * 1024 : env.uploadMaxFileSizeBytes,
+      fileSize: limitMb * 1024 * 1024,
       files: maxFiles,
       fields: 50,
     },
     fileFilter: buildFileFilter(kinds),
   });
+  return tagLimit(instance, limitMb);
 }
 
-/** Images only, capped at 5 MB — profile pictures. */
-const imageUploader = createUploader({ kinds: [FILE_KINDS.IMAGE], maxSizeMb: 5, maxFiles: 1 });
+/** Images only — profile pictures, capped by `UPLOAD_MAX_IMAGE_SIZE_MB`. */
+const imageUploader = createUploader({
+  kinds: [FILE_KINDS.IMAGE],
+  maxSizeMb: env.UPLOAD_MAX_IMAGE_SIZE_MB,
+  maxFiles: 1,
+});
 
-/** Full document/media whitelist — lessons, homework and attachments. */
+/** Full document/media/archive whitelist — lessons, homework and attachments. */
 const documentUploader = createUploader({ kinds: LESSON_FILE_KINDS });
 
 /**
@@ -64,11 +93,12 @@ const documentUploader = createUploader({ kinds: LESSON_FILE_KINDS });
  * render them in the standard envelope.
  * @type {import('express').ErrorRequestHandler}
  */
-function handleUploadErrors(error, _req, _res, next) {
+function handleUploadErrors(error, req, _res, next) {
   if (!(error instanceof multer.MulterError)) return next(error);
 
+  const limitMb = req.uploadMaxSizeMb || env.UPLOAD_MAX_FILE_SIZE_MB;
   const messages = {
-    LIMIT_FILE_SIZE: `File exceeds the maximum size of ${env.UPLOAD_MAX_FILE_SIZE_MB} MB`,
+    LIMIT_FILE_SIZE: `File exceeds the maximum size of ${limitMb} MB`,
     LIMIT_FILE_COUNT: 'Too many files uploaded',
     LIMIT_UNEXPECTED_FILE: `Unexpected file field "${error.field}"`,
     LIMIT_PART_COUNT: 'Too many parts in the multipart payload',

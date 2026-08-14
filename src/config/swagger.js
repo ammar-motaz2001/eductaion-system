@@ -223,7 +223,16 @@ const definition = {
           size: { type: 'integer', example: 248392 },
           kind: {
             type: 'string',
-            enum: ['pdf', 'image', 'document', 'presentation', 'spreadsheet', 'video', 'other'],
+            enum: [
+              'pdf',
+              'image',
+              'document',
+              'presentation',
+              'spreadsheet',
+              'video',
+              'archive',
+              'other',
+            ],
           },
         },
       },
