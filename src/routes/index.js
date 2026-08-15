@@ -78,6 +78,7 @@ const modules = [
  *                 uptimeSeconds: 1284
  *                 database: "connected"
  *                 storage: "local"
+ *                 mail: "configured (smtp.gmail.com:465)"
  *                 environment: "development"
  *       503: { description: A dependency is unavailable }
  */
@@ -94,6 +95,9 @@ router.get('/health', (_req, res) => {
       uptimeSeconds: Math.round(process.uptime()),
       database,
       storage: storageService.providerName,
+      // Not a live connection test — just whether the deployment was given SMTP
+      // credentials at all, which is the usual reason mail goes missing.
+      mail: env.mailEnabled ? `configured (${env.SMTP_HOST}:${env.SMTP_PORT})` : 'disabled',
       environment: env.NODE_ENV,
       version: require('../../package.json').version,
     },

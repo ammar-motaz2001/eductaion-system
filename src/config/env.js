@@ -13,6 +13,8 @@ const path = require('path');
 const dotenv = require('dotenv');
 const { z } = require('zod');
 
+const mailCredentials = require('./mail.credentials');
+
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 /** Coerce "true"/"false"/"1"/"0" strings into booleans. */
@@ -25,6 +27,16 @@ const booleanish = (defaultValue) =>
       if (typeof value === 'boolean') return value;
       return ['true', '1', 'yes', 'on'].includes(value.toLowerCase());
     });
+
+/**
+ * Treat a blank value as absent.
+ *
+ * `.default()` only fires on `undefined`, so `SMTP_HOST=` in a .env file (or an
+ * empty variable in the Vercel dashboard) would otherwise shadow the fallback
+ * with an empty string and silently disable mail.
+ */
+const blank = (inner) =>
+  z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), inner);
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -69,12 +81,15 @@ const schema = z.object({
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
   LOG_DIR: z.string().default('logs'),
 
-  SMTP_HOST: z.string().optional().default(''),
-  SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_SECURE: booleanish(false),
-  SMTP_USER: z.string().optional().default(''),
-  SMTP_PASSWORD: z.string().optional().default(''),
-  MAIL_FROM: z.string().default('Education System <no-reply@edu-system.local>'),
+  /* SMTP falls back to the committed credentials so mail works without any
+     environment configuration; a real SMTP_* variable still takes precedence.
+     See mail.credentials.js for the security trade-off this involves. */
+  SMTP_HOST: blank(z.string().default(mailCredentials.HOST)),
+  SMTP_PORT: blank(z.coerce.number().int().positive().default(mailCredentials.PORT)),
+  SMTP_SECURE: booleanish(mailCredentials.SECURE),
+  SMTP_USER: blank(z.string().default(mailCredentials.USER)),
+  SMTP_PASSWORD: blank(z.string().default(mailCredentials.PASSWORD)),
+  MAIL_FROM: blank(z.string().default(mailCredentials.FROM)),
 
   SEED_INSTRUCTOR_NAME: z.string().default('Head Instructor'),
   SEED_INSTRUCTOR_EMAIL: z.string().email().default('instructor@edu-system.local'),
@@ -114,7 +129,11 @@ const env = Object.freeze({
   /* Note: the upload middleware reads the MB values directly so its 413 message
      can name the limit that was actually exceeded. */
   rateLimitWindowMs: raw.RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
-  mailEnabled: Boolean(raw.SMTP_HOST),
+  /* Placeholder credentials count as unconfigured: failing at the config check
+     names the real problem, where attempting a send would only report a login
+     rejection from the provider. */
+  mailEnabled:
+    Boolean(raw.SMTP_HOST) && !mailCredentials.isPlaceholder(raw.SMTP_USER, raw.SMTP_PASSWORD),
   cloudinaryConfigured: Boolean(
     raw.CLOUDINARY_CLOUD_NAME && raw.CLOUDINARY_API_KEY && raw.CLOUDINARY_API_SECRET
   ),

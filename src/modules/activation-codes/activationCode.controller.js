@@ -5,12 +5,18 @@ const ApiResponse = require('../../core/ApiResponse');
 const service = require('./activationCode.service');
 
 const issue = asyncHandler(async (req, res) => {
-  const codes = await service.issue(req.body, req.user._id);
-  return ApiResponse.created(
-    res,
-    codes,
-    `${codes.length} activation code${codes.length === 1 ? '' : 's'} generated successfully`
-  );
+  const { codes, mail } = await service.issue(req.body, req.user._id);
+
+  // The code is always generated; whether it reached the recipient is a separate
+  // fact, and the caller needs to know which one happened.
+  let message = `${codes.length} activation code${codes.length === 1 ? '' : 's'} generated successfully`;
+  if (mail) {
+    message += mail.delivered
+      ? ` and emailed to ${req.body.intendedEmail}`
+      : ` but the email could not be sent (${mail.reason})`;
+  }
+
+  return ApiResponse.created(res, codes, message);
 });
 
 const list = asyncHandler(async (req, res) => {

@@ -59,6 +59,8 @@ class ActivationCodeService extends BaseService {
    * @param {number} [payload.expiresInDays] Overrides the configured default.
    * @param {string} [payload.collectionId] Auto-enrol the redeemer here.
    * @param {string} issuedBy Instructor id.
+   * @returns {Promise<{codes: object[], mail: {delivered: boolean, reason?: string}|null}>}
+   *   `mail` is null unless a single code was issued to an `intendedEmail`.
    */
   async issue(payload, issuedBy) {
     const {
@@ -102,15 +104,18 @@ class ActivationCodeService extends BaseService {
       created.push(record);
     }
 
+    // Delivery is reported back rather than swallowed: a code that was generated
+    // but never emailed looks identical to a delivered one from the client side.
+    let mail = null;
     if (intendedEmail && created.length === 1) {
-      await this.mailer.sendActivationCode({
+      mail = await this.mailer.sendActivationCode({
         to: intendedEmail,
         code: created[0].code,
         expiresAt,
       });
     }
 
-    return created;
+    return { codes: created, mail };
   }
 
   /**
